@@ -1,5 +1,6 @@
 const Task = require("../models/Task");
 
+//Fonction pour récuperer toutes les taches
 exports.getAllTasks = async (req, res) => {
   try {
     const tasks = await Task.find();
@@ -10,6 +11,7 @@ exports.getAllTasks = async (req, res) => {
   }
 };
 
+//Fonction pour récuperer une seule tache
 exports.getTaskById = async (req, res) => {
   try {
     const task = await Task.findById(req.params.id);
@@ -123,25 +125,32 @@ exports.deleteTask = async (req, res) => {
   }
 };
 
+//Fonction pour ajouter un commentaire
 exports.addComment = async (req, res) => {
   try {
-    await client.connect();
-    const db = client.db("local");
-    const collection = db.collection("tasks");
-
-    const taskId = new ObjectId(req.params.id);
+    const taskId = req.params.id;
     const newComment = {
-      contenu: req.body.contenu,
-      auteur: req.body.auteur || "Anonyme",
+      texte: req.body.contenu,
       date: new Date(),
     };
 
-    const result = await collection.updateOne(
-      { _id: taskId },
-      { $push: { commentaires: newComment } }
+    const modificationEntry = {
+      modification: `Commentaire ajouté: ${req.body.contenu}`,
+      date: new Date(),
+    };
+
+    const updatedTask = await Task.findByIdAndUpdate(
+      taskId,
+      {
+        $push: {
+          commentaires: newComment,
+          historiqueModifications: modificationEntry,
+        },
+      },
+      { new: true }
     );
 
-    if (result.modifiedCount === 0) {
+    if (!updatedTask) {
       return res.status(404).json({ error: "Tâche non trouvée" });
     }
 
@@ -153,9 +162,123 @@ exports.addComment = async (req, res) => {
       message: err.message,
       stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
     });
-  } finally {
-    await client.close();
   }
 };
 
-// Autres méthodes du controller...
+//Fonction pour ajouter une sous tache
+exports.addSubTask = async (req, res) => {
+  try {
+    const taskId = req.params.id;
+    const newSubTask = {
+      titre: req.body.titre,
+      complete: false,
+    };
+
+    const modificationEntry = {
+      modification: `Sous-tâche ajoutée: ${req.body.titre}`,
+      date: new Date(),
+    };
+
+    const updatedTask = await Task.findByIdAndUpdate(
+      taskId,
+      {
+        $push: {
+          sousTaches: newSubTask,
+          historiqueModifications: modificationEntry,
+        },
+      },
+      { new: true }
+    );
+
+    if (!updatedTask) {
+      return res.status(404).json({ error: "Tâche non trouvée" });
+    }
+
+    res.status(201).json(newSubTask);
+  } catch (err) {
+    console.error("Erreur serveur:", err);
+    res.status(500).json({
+      error: "Erreur serveur",
+      message: err.message,
+      stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
+    });
+  }
+};
+
+exports.filterTasks = async (req, res) => {
+  try {
+    const filters = {};
+
+    // Ajouter les filtres si présents dans la requête
+    if (req.query.statut) filters.statut = req.query.statut;
+    if (req.query.priorite) filters.priorite = req.query.priorite;
+    if (req.query.categorie) filters.categorie = req.query.categorie;
+    if (req.query.etiquette) filters.etiquettes = req.query.etiquette;
+    if (req.query.dateEcheance) {
+      filters.dateEcheance = {
+        $lte: new Date(req.query.dateEcheance),
+      };
+    }
+
+    const tasks = await Task.find(filters);
+    res.json(tasks);
+  } catch (err) {
+    console.error("Erreur serveur:", err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+};
+
+exports.sortTasks = async (req, res) => {
+  try {
+    const sortOptions = {};
+
+    // Ajouter les options de tri
+    if (req.query.sortBy) {
+      const sortFields = req.query.sortBy.split(",");
+      sortFields.forEach((field) => {
+        const [key, order] = field.split(":");
+        sortOptions[key] = order === "desc" ? -1 : 1;
+      });
+    }
+
+    const tasks = await Task.find().sort(sortOptions);
+    res.json(tasks);
+  } catch (err) {
+    console.error("Erreur serveur:", err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+};
+
+exports.getFilteredAndSortedTasks = async (req, res) => {
+  try {
+    // Construction des filtres
+    const filters = {};
+
+    if (req.query.statut) filters.statut = req.query.statut;
+    if (req.query.priorite) filters.priorite = req.query.priorite;
+    if (req.query.categorie) filters.categorie = req.query.categorie;
+    if (req.query.etiquette) filters.etiquettes = req.query.etiquette;
+    if (req.query.dateEcheance) {
+      filters.dateEcheance = {
+        $lte: new Date(req.query.dateEcheance),
+      };
+    }
+
+    // Construction des options de tri
+    const sortOptions = {};
+    if (req.query.sortBy) {
+      const sortFields = req.query.sortBy.split(",");
+      sortFields.forEach((field) => {
+        const [key, order] = field.split(":");
+        sortOptions[key] = order === "desc" ? -1 : 1;
+      });
+    }
+
+    // Exécution de la requête avec filtres et tri
+    const tasks = await Task.find(filters).sort(sortOptions);
+    res.json(tasks);
+  } catch (err) {
+    console.error("Erreur serveur:", err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+};
