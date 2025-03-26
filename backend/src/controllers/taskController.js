@@ -1,94 +1,65 @@
-const { MongoClient, ObjectId } = require("mongodb");
-const uri = "mongodb://localhost:27017";
-const client = new MongoClient(uri);
+const Task = require("../models/Task");
 
 exports.getAllTasks = async (req, res) => {
   try {
-    await client.connect();
-    const db = client.db("local");
-    const collection = db.collection("tasks");
-    const tasks = await collection.find({}).toArray();
+    const tasks = await Task.find();
     res.json(tasks);
   } catch (err) {
     console.error("Erreur serveur:", err);
     res.status(500).json({ error: "Erreur serveur" });
-  } finally {
-    await client.close();
   }
 };
 
 exports.getTaskById = async (req, res) => {
   try {
-    await client.connect();
-    const db = client.db("local");
-    const collection = db.collection("tasks");
-    const task = await collection.findOne({ _id: new ObjectId(req.params.id) });
-
+    const task = await Task.findById(req.params.id);
     if (!task) {
       return res.status(404).json({ error: "Tâche non trouvée" });
     }
-
-    // S'assurer que les champs optionnels sont présents
-    task.statut = task.statut || "à faire";
-    task.priorite = task.priorite || "moyenne";
-    task.categorie = task.categorie || "autre";
-    task.etiquettes = task.etiquettes || [];
-    task.sousTaches = task.sousTaches || [];
-    task.commentaires = task.commentaires || [];
-    task.historiqueModifications = task.historiqueModifications || [];
-
     res.json(task);
   } catch (err) {
     console.error("Erreur serveur:", err);
     res.status(500).json({ error: "Erreur serveur" });
-  } finally {
-    await client.close();
   }
 };
 
 // Nouvelle fonction pour créer une tâche
 exports.createTask = async (req, res) => {
   try {
-    await client.connect();
-    const db = client.db("local");
-    const collection = db.collection("tasks");
-
     // Validation des champs requis
-    if (!req.body.titre || !req.body.description || !req.body.echeance) {
-      return res.status(400).json({ error: "Champs requis manquants" });
+    if (!req.body.titre) {
+      return res.status(400).json({ error: "Le titre est obligatoire" });
     }
 
-    const newTask = {
-      ...req.body,
-      dateCreation: new Date(),
-      statut: req.body.statut || "à faire",
-      priorite: req.body.priorite || "moyenne",
-      categorie: req.body.categorie || "autre",
-      etiquettes: req.body.etiquettes || [],
-      sousTaches: req.body.sousTaches || [],
-      commentaires: req.body.commentaires || [],
-      historiqueModifications: [],
-    };
+    // Création d'une nouvelle tâche avec Mongoose
+    const newTask = new Task({
+      titre: req.body.titre,
+      description: req.body.description,
+      dateEcheance: req.body.dateEcheance,
+      statut: req.body.statut,
+      priorite: req.body.priorite,
+      categorie: req.body.categorie,
+      etiquettes: req.body.etiquettes,
+      sousTaches: req.body.sousTaches,
+      commentaires: req.body.commentaires,
+    });
 
-    const result = await collection.insertOne(newTask);
-    res.status(201).json({ id: result.insertedId });
+    // Sauvegarde de la tâche
+    const savedTask = await newTask.save();
+    res.status(201).json(savedTask);
   } catch (err) {
     console.error("Erreur serveur:", err);
     res.status(500).json({ error: "Erreur serveur" });
-  } finally {
-    await client.close();
   }
 };
 
 // Fonction pour mettre à jour une tâche
 exports.updateTask = async (req, res) => {
   try {
-    await client.connect();
-    const db = client.db("local");
-    const collection = db.collection("tasks");
+    const taskId = req.params.id;
 
-    const taskId = new ObjectId(req.params.id);
-    const existingTask = await collection.findOne({ _id: taskId });
+    // Récupérer la tâche existante
+    const existingTask = await Task.findById(taskId);
 
     if (!existingTask) {
       return res.status(404).json({ error: "Tâche non trouvée" });
@@ -105,53 +76,43 @@ exports.updateTask = async (req, res) => {
           JSON.stringify(existingTask[key]) !== JSON.stringify(newData[key])
         ) {
           modifications.push({
-            champ: key,
-            ancienneValeur: existingTask[key],
-            nouvelleValeur: newData[key],
-            dateModification: new Date(),
+            modification: `${key} modifié de ${existingTask[key]} à ${newData[key]}`,
+            date: new Date(),
           });
         }
       }
     });
 
-    // Mettre à jour la tâche avec les nouvelles données et l'historique
-    const updatedTask = {
-      ...newData,
-      historiqueModifications: [
-        ...(existingTask.historiqueModifications || []),
-        ...modifications,
-      ],
-    };
-
-    const result = await collection.updateOne(
-      { _id: taskId },
-      { $set: updatedTask }
+    // Ajouter les nouvelles modifications à l'historique existant
+    const updatedTask = await Task.findByIdAndUpdate(
+      taskId,
+      {
+        ...newData,
+        $push: {
+          historiqueModifications: {
+            $each: modifications,
+          },
+        },
+      },
+      { new: true } // Cette option retourne le document mis à jour
     );
 
-    if (result.modifiedCount === 0) {
-      return res.status(400).json({ error: "Aucune modification effectuée" });
-    }
-
-    res.json({ message: "Tâche mise à jour avec succès" });
+    res.json(updatedTask);
   } catch (err) {
     console.error("Erreur serveur:", err);
     res.status(500).json({ error: "Erreur serveur" });
-  } finally {
-    await client.close();
   }
 };
 
 // Fonction pour supprimer une tâche
 exports.deleteTask = async (req, res) => {
   try {
-    await client.connect();
-    const db = client.db("local");
-    const collection = db.collection("tasks");
-    const result = await collection.deleteOne({
-      _id: new ObjectId(req.params.id),
-    });
+    const taskId = req.params.id;
 
-    if (result.deletedCount === 0) {
+    // Recherche et suppression de la tâche
+    const deletedTask = await Task.findByIdAndDelete(taskId);
+
+    if (!deletedTask) {
       return res.status(404).json({ error: "Tâche non trouvée" });
     }
 
@@ -159,8 +120,6 @@ exports.deleteTask = async (req, res) => {
   } catch (err) {
     console.error("Erreur serveur:", err);
     res.status(500).json({ error: "Erreur serveur" });
-  } finally {
-    await client.close();
   }
 };
 
