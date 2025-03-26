@@ -7,6 +7,7 @@
           <button class="delete-button" @click="confirmDelete">
             Supprimer
           </button>
+          <button class="edit-button" @click="openEditModal">Modifier</button>
           <button class="close-button" @click="closeModal">&times;</button>
         </div>
       </div>
@@ -156,6 +157,91 @@
           <p v-else>Aucun commentaire</p>
         </div>
       </div>
+
+      <div v-if="showEditModal" class="modal-overlay edit-modal-overlay">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2>Modifier la tâche</h2>
+            <button class="close-button" @click="closeEditModal">
+              &times;
+            </button>
+          </div>
+          <form @submit.prevent="updateTask" class="task-form">
+            <div class="form-group">
+              <label for="titre">Titre*</label>
+              <input
+                type="text"
+                id="titre"
+                v-model="task.titre"
+                required
+                class="form-input" />
+            </div>
+
+            <div class="form-group">
+              <label for="description">Description</label>
+              <textarea
+                id="description"
+                v-model="task.description"
+                class="form-textarea"></textarea>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="statut">Statut</label>
+                <select id="statut" v-model="task.statut" class="form-select">
+                  <option value="à faire">À faire</option>
+                  <option value="en cours">En cours</option>
+                  <option value="terminé">Terminé</option>
+                  <option value="annulée">Annulée</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="priorite">Priorité</label>
+                <select
+                  id="priorite"
+                  v-model="task.priorite"
+                  class="form-select">
+                  <option value="basse">Basse</option>
+                  <option value="moyenne">Moyenne</option>
+                  <option value="haute">Haute</option>
+                  <option value="critique">Critique</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="categorie">Catégorie</label>
+              <input
+                type="text"
+                id="categorie"
+                v-model="task.categorie"
+                class="form-input" />
+            </div>
+
+            <div class="form-group">
+              <label for="dateEcheance">Date d'échéance</label>
+              <input
+                type="date"
+                id="dateEcheance"
+                v-model="task.dateEcheance"
+                class="form-input" />
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="button button-primary">
+                Enregistrer
+              </button>
+              <button
+                type="button"
+                class="button button-secondary"
+                @click="closeEditModal">
+                Annuler
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -177,6 +263,7 @@ const error = ref(null);
 // États pour les formulaires
 const showAddSubTask = ref(false);
 const showAddComment = ref(false);
+const showEditModal = ref(false);
 const newSubTask = ref({ titre: "" });
 const newComment = ref({
   auteur: {
@@ -309,6 +396,56 @@ const addComment = async () => {
   }
 };
 
+const openEditModal = () => {
+  showEditModal.value = true;
+};
+
+const closeEditModal = () => {
+  showEditModal.value = false;
+};
+
+const updateTask = async () => {
+  try {
+    const taskToUpdate = {
+      titre: task.value.titre,
+      description: task.value.description,
+      statut: task.value.statut,
+      priorite: task.value.priorite,
+      categorie: task.value.categorie,
+      dateEcheance: task.value.dateEcheance,
+    };
+
+    console.log("Données formatées :", taskToUpdate);
+
+    const response = await fetch(
+      `http://localhost:3000/api/tasks/${props.taskId}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(taskToUpdate),
+      }
+    );
+
+    console.log("Réponse du serveur :", response);
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("Erreur détaillée :", errorData);
+      throw new Error(
+        errorData.message || "Erreur lors de la mise à jour de la tâche"
+      );
+    }
+
+    await fetchTaskDetails();
+    closeEditModal();
+  } catch (err) {
+    console.error("Erreur complète :", err);
+    error.value = err.message;
+  }
+};
+
 watch(
   () => props.show,
   (newVal) => {
@@ -331,34 +468,126 @@ watch(
   justify-content: center;
   align-items: center;
   z-index: 1000;
+  padding: 20px;
 }
 
 .modal-content {
   background: white;
   border-radius: 8px;
+  padding: 1.5rem;
   width: 90%;
   max-width: 600px;
   max-height: 90vh;
   overflow-y: auto;
-  padding: 24px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  position: relative;
 }
 
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 15px;
-  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 1.5rem;
+}
+
+.modal-header h2 {
+  margin: 0;
+  color: var(--primary-color);
+}
+
+.task-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-height: calc(90vh - 150px);
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-row {
+  display: flex;
+  gap: 1rem;
+}
+
+.form-row .form-group {
+  flex: 1;
+}
+
+.form-input,
+.form-select,
+.form-textarea {
+  padding: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.form-textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.form-select {
+  appearance: none;
+  background-color: white;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1rem;
+  position: sticky;
+  bottom: 0;
+  background: white;
+  padding: 1rem 0;
+  border-top: 1px solid var(--border-color);
+}
+
+.button {
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.2s;
+}
+
+.button-primary {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+}
+
+.button-primary:hover {
+  background-color: var(--secondary-color);
+}
+
+.button-secondary {
+  background-color: white;
+  color: var(--primary-color);
+  border: 1px solid var(--primary-color);
+}
+
+.button-secondary:hover {
+  background-color: var(--background-color);
 }
 
 .close-button {
   background: none;
   border: none;
-  font-size: 24px;
+  font-size: 1.5rem;
   cursor: pointer;
-  padding: 0 8px;
+  color: var(--text-color);
+}
+
+.close-button:hover {
+  color: var(--primary-color);
 }
 
 .task-section {
@@ -480,12 +709,6 @@ watch(
   font-size: 0.8rem;
 }
 
-.modal-header h2 {
-  margin: 0;
-  color: var(--text-color);
-  font-size: 1.5rem;
-}
-
 .modal-actions {
   display: flex;
   gap: 12px;
@@ -534,43 +757,6 @@ watch(
   padding: 16px;
   border-radius: 8px;
   margin-bottom: 16px;
-}
-
-.form-input {
-  width: 100%;
-  padding: 8px;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  margin-bottom: 12px;
-}
-
-textarea.form-input {
-  min-height: 80px;
-  resize: vertical;
-}
-
-.form-actions {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
-}
-
-.button-submit {
-  background-color: var(--primary-color);
-  color: white;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.button-cancel {
-  background-color: #e0e0e0;
-  color: var(--text-color);
-  border: none;
-  padding: 6px 12px;
-  border-radius: 4px;
-  cursor: pointer;
 }
 
 .author-info {

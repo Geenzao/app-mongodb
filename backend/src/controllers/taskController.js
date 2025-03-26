@@ -95,14 +95,18 @@ exports.createTask = async (req, res) => {
 // Fonction pour mettre à jour une tâche
 exports.updateTask = async (req, res) => {
   try {
-    const taskId = req.params.id;
+    console.log("Données reçues :", req.body);
+    console.log("ID de la tâche :", req.params.id);
 
-    // Récupérer la tâche existante
+    const taskId = req.params.id;
     const existingTask = await Task.findById(taskId);
 
     if (!existingTask) {
+      console.log("Tâche non trouvée");
       return res.status(404).json({ error: "Tâche non trouvée" });
     }
+
+    console.log("Tâche existante :", existingTask);
 
     // Créer l'entrée d'historique
     const modifications = [];
@@ -139,7 +143,7 @@ exports.updateTask = async (req, res) => {
     res.json(updatedTask);
   } catch (err) {
     console.error("Erreur serveur:", err);
-    res.status(500).json({ error: "Erreur serveur" });
+    res.status(500).json({ error: "Erreur serveur", details: err.message });
   }
 };
 
