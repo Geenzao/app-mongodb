@@ -1,6 +1,11 @@
 <template>
   <div>
-    <h1>Mes Tâches</h1>
+    <div class="header-container">
+      <h1>Mes Tâches</h1>
+      <button class="add-task-button" @click="openCreateModal">
+        + Nouvelle tâche
+      </button>
+    </div>
 
     <!-- Affichage d'un message de chargement -->
     <div v-if="loading">Chargement des tâches...</div>
@@ -19,7 +24,17 @@
     </div>
 
     <!-- Modal des détails -->
-    <TaskModal :show="showModal" :taskId="selectedTaskId" @close="closeModal" />
+    <TaskModal
+      :show="showModal"
+      :taskId="selectedTaskId"
+      @close="closeModal"
+      @taskDeleted="onTaskDeleted" />
+
+    <!-- Modal de création -->
+    <CreateTaskModal
+      :show="showCreateModal"
+      @close="closeCreateModal"
+      @taskCreated="onTaskCreated" />
   </div>
 </template>
 
@@ -27,6 +42,7 @@
 import { ref, onMounted } from "vue";
 import TaskCard from "@/components/TaskCard.vue";
 import TaskModal from "@/components/TaskModal.vue";
+import CreateTaskModal from "@/components/CreateTaskModal.vue";
 
 // États réactifs
 const tasks = ref([]);
@@ -34,6 +50,7 @@ const loading = ref(true);
 const error = ref(null);
 const showModal = ref(false);
 const selectedTaskId = ref(null);
+const showCreateModal = ref(false);
 
 // Fonction pour récupérer les tâches
 const fetchTasks = async () => {
@@ -62,6 +79,24 @@ const openModal = (taskId) => {
 const closeModal = () => {
   showModal.value = false;
   selectedTaskId.value = null;
+};
+
+const openCreateModal = () => {
+  showCreateModal.value = true;
+};
+
+const closeCreateModal = () => {
+  showCreateModal.value = false;
+};
+
+const onTaskCreated = async (newTask) => {
+  await fetchTasks(); // Recharger toutes les tâches
+};
+
+// Fonction pour gérer la suppression d'une tâche
+const onTaskDeleted = async () => {
+  await fetchTasks(); // Recharger la liste des tâches
+  closeModal();
 };
 
 // Charger les tâches au montage du composant
@@ -107,5 +142,27 @@ h1 {
   .tasks-grid {
     grid-template-columns: 1fr;
   }
+}
+
+.header-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.add-task-button {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.3s;
+}
+
+.add-task-button:hover {
+  background-color: var(--secondary-color);
 }
 </style>

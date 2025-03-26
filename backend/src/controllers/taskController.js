@@ -28,30 +28,67 @@ exports.getTaskById = async (req, res) => {
 // Nouvelle fonction pour créer une tâche
 exports.createTask = async (req, res) => {
   try {
-    // Validation des champs requis
-    if (!req.body.titre) {
-      return res.status(400).json({ error: "Le titre est obligatoire" });
+    console.log("Données reçues:", req.body);
+
+    // Validation plus détaillée
+    const validationErrors = [];
+
+    if (!req.body.titre) validationErrors.push("Le titre est obligatoire");
+    if (!req.body.auteur) validationErrors.push("L'auteur est obligatoire");
+    if (req.body.auteur) {
+      if (!req.body.auteur.nom)
+        validationErrors.push("Le nom de l'auteur est obligatoire");
+      if (!req.body.auteur.prenom)
+        validationErrors.push("Le prénom de l'auteur est obligatoire");
+      if (!req.body.auteur.email)
+        validationErrors.push("L'email de l'auteur est obligatoire");
     }
 
-    // Création d'une nouvelle tâche avec Mongoose
+    if (validationErrors.length > 0) {
+      console.log("Erreurs de validation:", validationErrors);
+      return res.status(400).json({
+        error: "Erreur de validation",
+        details: validationErrors,
+      });
+    }
+
+    // Création d'une nouvelle tâche
     const newTask = new Task({
       titre: req.body.titre,
       description: req.body.description,
-      dateEcheance: req.body.dateEcheance,
       statut: req.body.statut,
       priorite: req.body.priorite,
       categorie: req.body.categorie,
+      dateEcheance: req.body.dateEcheance,
       etiquettes: req.body.etiquettes,
-      sousTaches: req.body.sousTaches,
-      commentaires: req.body.commentaires,
+      auteur: {
+        nom: req.body.auteur.nom,
+        prenom: req.body.auteur.prenom,
+        email: req.body.auteur.email,
+      },
     });
 
-    // Sauvegarde de la tâche
+    console.log("Tâche à sauvegarder:", newTask);
+
     const savedTask = await newTask.save();
+    console.log("Tâche sauvegardée avec succès:", savedTask);
+
     res.status(201).json(savedTask);
   } catch (err) {
-    console.error("Erreur serveur:", err);
-    res.status(500).json({ error: "Erreur serveur" });
+    console.error("Erreur détaillée:", err);
+
+    // Si c'est une erreur de validation Mongoose
+    if (err.name === "ValidationError") {
+      return res.status(400).json({
+        error: "Erreur de validation",
+        details: Object.values(err.errors).map((e) => e.message),
+      });
+    }
+
+    res.status(500).json({
+      error: "Erreur serveur",
+      message: err.message,
+    });
   }
 };
 
@@ -130,12 +167,17 @@ exports.addComment = async (req, res) => {
   try {
     const taskId = req.params.id;
     const newComment = {
-      texte: req.body.contenu,
+      auteur: {
+        nom: req.body.auteur.nom,
+        prenom: req.body.auteur.prenom,
+        email: req.body.auteur.email,
+      },
+      contenu: req.body.contenu,
       date: new Date(),
     };
 
     const modificationEntry = {
-      modification: `Commentaire ajouté: ${req.body.contenu}`,
+      modification: `Commentaire ajouté par ${newComment.auteur.prenom} ${newComment.auteur.nom}`,
       date: new Date(),
     };
 
@@ -157,11 +199,7 @@ exports.addComment = async (req, res) => {
     res.json(newComment);
   } catch (err) {
     console.error("Erreur serveur:", err);
-    res.status(500).json({
-      error: "Erreur serveur",
-      message: err.message,
-      stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
-    });
+    res.status(500).json({ error: "Erreur serveur" });
   }
 };
 
@@ -200,7 +238,6 @@ exports.addSubTask = async (req, res) => {
     res.status(500).json({
       error: "Erreur serveur",
       message: err.message,
-      stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
     });
   }
 };

@@ -54,6 +54,8 @@ const formatDate = (date) => {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
+  width: 100%;
+  max-width: 400px;
 }
 
 .task-card:hover {
@@ -86,18 +88,23 @@ const formatDate = (date) => {
   font-size: 0.9rem;
 }
 
-.task-status.à\ faire {
+.task-status.faire {
   background-color: #ff9f43;
   color: white;
 }
 
-.task-status.en\ cours {
+.task-status.cours {
   background-color: #54a0ff;
   color: white;
 }
 
 .task-status.terminé {
   background-color: #10ac84;
+  color: white;
+}
+
+.task-status.annulée {
+  background-color: #576574;
   color: white;
 }
 
@@ -121,6 +128,12 @@ const formatDate = (date) => {
 .task-priority.basse {
   background-color: #7bed9f;
   color: white;
+}
+
+.task-priority.critique {
+  background-color: #ff4757;
+  color: white;
+  font-weight: bold;
 }
 
 .task-description {

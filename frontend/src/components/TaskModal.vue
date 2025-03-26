@@ -3,7 +3,12 @@
     <div class="modal-content" @click.stop>
       <div class="modal-header">
         <h2>{{ task.titre }}</h2>
-        <button class="close-button" @click="closeModal">&times;</button>
+        <div class="modal-actions">
+          <button class="delete-button" @click="confirmDelete">
+            Supprimer
+          </button>
+          <button class="close-button" @click="closeModal">&times;</button>
+        </div>
       </div>
 
       <div v-if="loading" class="modal-loading">Chargement des détails...</div>
@@ -11,6 +16,22 @@
         {{ error }}
       </div>
       <div v-else class="modal-body">
+        <div class="task-section">
+          <h3>Auteur</h3>
+          <div class="author-info">
+            <div class="author-name">
+              <p>
+                <strong>{{ task.auteur.prenom }} {{ task.auteur.nom }}</strong>
+              </p>
+            </div>
+            <p class="author-email">
+              <a :href="'mailto:' + task.auteur.email">{{
+                task.auteur.email
+              }}</a>
+            </p>
+          </div>
+        </div>
+
         <div class="task-status-priority">
           <div class="status-priority-container">
             <span class="task-priority" :class="task.priorite">{{
@@ -44,7 +65,28 @@
         </div>
 
         <div class="task-section">
-          <h3>Sous-tâches</h3>
+          <div class="section-header">
+            <h3>Sous-tâches</h3>
+            <button class="add-button" @click="showAddSubTask = true">
+              + Ajouter
+            </button>
+          </div>
+
+          <!-- Formulaire d'ajout de sous-tâche -->
+          <div v-if="showAddSubTask" class="add-form">
+            <input
+              v-model="newSubTask.titre"
+              placeholder="Titre de la sous-tâche"
+              class="form-input" />
+            <div class="form-actions">
+              <button class="button-submit" @click="addSubTask">Ajouter</button>
+              <button class="button-cancel" @click="showAddSubTask = false">
+                Annuler
+              </button>
+            </div>
+          </div>
+
+          <!-- Liste des sous-tâches -->
           <div v-if="task.sousTaches && task.sousTaches.length > 0">
             <div
               v-for="(sousTask, index) in task.sousTaches"
@@ -60,14 +102,55 @@
         </div>
 
         <div class="task-section">
-          <h3>Commentaires</h3>
+          <div class="section-header">
+            <h3>Commentaires</h3>
+            <button class="add-button" @click="showAddComment = true">
+              + Ajouter
+            </button>
+          </div>
+
+          <!-- Formulaire d'ajout de commentaire -->
+          <div v-if="showAddComment" class="add-form">
+            <div class="author-inputs">
+              <input
+                v-model="newComment.auteur.nom"
+                placeholder="Nom"
+                class="form-input" />
+              <input
+                v-model="newComment.auteur.prenom"
+                placeholder="Prénom"
+                class="form-input" />
+              <input
+                v-model="newComment.auteur.email"
+                placeholder="Email"
+                class="form-input"
+                type="email" />
+            </div>
+            <textarea
+              v-model="newComment.contenu"
+              placeholder="Votre commentaire"
+              class="form-input"></textarea>
+            <div class="form-actions">
+              <button class="button-submit" @click="addComment">Ajouter</button>
+              <button class="button-cancel" @click="showAddComment = false">
+                Annuler
+              </button>
+            </div>
+          </div>
+
+          <!-- Liste des commentaires -->
           <div v-if="task.commentaires && task.commentaires.length > 0">
             <div
               v-for="(comment, index) in task.commentaires"
               :key="index"
               class="comment">
-              <p>{{ comment.texte }}</p>
-              <small>{{ formatDate(comment.date) }}</small>
+              <div class="comment-header">
+                <strong
+                  >{{ comment.auteur.prenom }} {{ comment.auteur.nom }}</strong
+                >
+                <small>{{ formatDate(comment.date) }}</small>
+              </div>
+              <p>{{ comment.contenu }}</p>
             </div>
           </div>
           <p v-else>Aucun commentaire</p>
@@ -85,11 +168,24 @@ const props = defineProps({
   taskId: String,
 });
 
-const emit = defineEmits(["close"]);
+const emit = defineEmits(["close", "taskDeleted"]);
 
 const task = ref({});
 const loading = ref(false);
 const error = ref(null);
+
+// États pour les formulaires
+const showAddSubTask = ref(false);
+const showAddComment = ref(false);
+const newSubTask = ref({ titre: "" });
+const newComment = ref({
+  auteur: {
+    nom: "",
+    prenom: "",
+    email: "",
+  },
+  contenu: "",
+});
 
 const closeModal = () => {
   emit("close");
@@ -122,6 +218,95 @@ const formatDate = (date) => {
     hour: "2-digit",
     minute: "2-digit",
   });
+};
+
+const confirmDelete = async () => {
+  if (confirm("Êtes-vous sûr de vouloir supprimer cette tâche ?")) {
+    try {
+      const response = await fetch(
+        `http://localhost:3000/api/tasks/${props.taskId}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Erreur lors de la suppression de la tâche");
+      }
+
+      emit("taskDeleted");
+      closeModal();
+    } catch (err) {
+      error.value = err.message;
+    }
+  }
+};
+
+// Fonction pour ajouter une sous-tâche
+const addSubTask = async () => {
+  try {
+    if (!newSubTask.value.titre.trim()) return;
+
+    const response = await fetch(
+      `http://localhost:3000/api/tasks/${props.taskId}/subtasks`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(newSubTask.value),
+      }
+    );
+
+    if (!response.ok)
+      throw new Error("Erreur lors de l'ajout de la sous-tâche");
+
+    // Rafraîchir les détails de la tâche
+    await fetchTaskDetails();
+    showAddSubTask.value = false;
+    newSubTask.value.titre = "";
+  } catch (err) {
+    error.value = err.message;
+  }
+};
+
+// Fonction pour ajouter un commentaire
+const addComment = async () => {
+  try {
+    if (
+      !newComment.value.contenu.trim() ||
+      !newComment.value.auteur.nom.trim() ||
+      !newComment.value.auteur.prenom.trim() ||
+      !newComment.value.auteur.email.trim()
+    )
+      return;
+
+    const response = await fetch(
+      `http://localhost:3000/api/tasks/${props.taskId}/comments`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(newComment.value),
+      }
+    );
+
+    if (!response.ok) throw new Error("Erreur lors de l'ajout du commentaire");
+
+    await fetchTaskDetails();
+    showAddComment.value = false;
+    newComment.value = {
+      auteur: {
+        nom: "",
+        prenom: "",
+        email: "",
+      },
+      contenu: "",
+    };
+  } catch (err) {
+    error.value = err.message;
+  }
 };
 
 watch(
@@ -189,10 +374,24 @@ watch(
 }
 
 .comment {
-  background-color: var(--background-color);
-  padding: 10px;
-  border-radius: 4px;
-  margin-bottom: 10px;
+  background-color: #f8f9fa;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.comment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.author-inputs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
 }
 
 .sous-tache {
@@ -234,24 +433,35 @@ watch(
   color: white;
 }
 
+.task-priority.critique {
+  background-color: #ff4757;
+  color: white;
+  font-weight: bold;
+}
+
 .task-status {
   padding: 4px 8px;
   border-radius: 4px;
   font-size: 0.9rem;
 }
 
-.task-status.à\ faire {
+.task-status.faire {
   background-color: #ff9f43;
   color: white;
 }
 
-.task-status.en\ cours {
+.task-status.cours {
   background-color: #54a0ff;
   color: white;
 }
 
 .task-status.terminé {
   background-color: #10ac84;
+  color: white;
+}
+
+.task-status.annulée {
+  background-color: #576574;
   color: white;
 }
 
@@ -274,5 +484,122 @@ watch(
   margin: 0;
   color: var(--text-color);
   font-size: 1.5rem;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.delete-button {
+  background-color: #ff4757;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.3s;
+}
+
+.delete-button:hover {
+  background-color: #ff6b81;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.add-button {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 4px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.3s;
+}
+
+.add-button:hover {
+  background-color: var(--secondary-color);
+}
+
+.add-form {
+  background-color: var(--background-color);
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.form-input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  margin-bottom: 12px;
+}
+
+textarea.form-input {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.form-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.button-submit {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.button-cancel {
+  background-color: #e0e0e0;
+  color: var(--text-color);
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.author-info {
+  background-color: var(--background-color);
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.author-name {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.author-email {
+  color: var(--primary-color);
+  margin: 0;
+}
+
+.author-email a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.author-email a:hover {
+  text-decoration: underline;
 }
 </style>

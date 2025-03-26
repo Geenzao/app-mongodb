@@ -1,5 +1,11 @@
 const mongoose = require("mongoose");
 
+const authorSchema = new mongoose.Schema({
+  nom: String,
+  prenom: String,
+  email: String,
+});
+
 const taskSchema = new mongoose.Schema({
   titre: {
     type: String,
@@ -11,12 +17,12 @@ const taskSchema = new mongoose.Schema({
   },
   statut: {
     type: String,
-    enum: ["à faire", "en cours", "terminé"],
+    enum: ["à faire", "en cours", "terminé", "annulée"],
     default: "à faire",
   },
   priorite: {
     type: String,
-    enum: ["basse", "moyenne", "haute"],
+    enum: ["basse", "moyenne", "haute", "critique"],
     default: "moyenne",
   },
   categorie: {
@@ -37,9 +43,20 @@ const taskSchema = new mongoose.Schema({
       },
     },
   ],
+  auteur: {
+    type: authorSchema,
+    required: true,
+  },
   commentaires: [
     {
-      texte: String,
+      auteur: {
+        type: authorSchema,
+        required: true,
+      },
+      contenu: {
+        type: String,
+        required: true,
+      },
       date: {
         type: Date,
         default: Date.now,
