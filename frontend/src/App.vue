@@ -5,13 +5,6 @@ import TheWelcome from "./components/TheWelcome.vue";
 
 <template>
   <div id="app">
-    <nav class="navbar">
-      <div class="container">
-        <router-link to="/">Accueil</router-link>
-        <!-- Ajouter d'autres liens ici -->
-      </div>
-    </nav>
-
     <main class="container">
       <router-view />
     </main>

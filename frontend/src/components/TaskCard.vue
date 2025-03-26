@@ -1,7 +1,12 @@
 <template>
-  <div class="task-card">
+  <div class="task-card" @click="$emit('click', task._id)">
     <div class="task-header">
-      <h3 class="task-title">{{ task.titre }}</h3>
+      <div class="task-title-container">
+        <h3 class="task-title">{{ task.titre }}</h3>
+        <span class="task-priority" :class="task.priorite">
+          {{ task.priorite }}
+        </span>
+      </div>
       <span class="task-status" :class="task.statut">{{ task.statut }}</span>
     </div>
 
@@ -23,12 +28,16 @@
 </template>
 
 <script setup>
+import { defineEmits } from "vue";
+
 const props = defineProps({
   task: {
     type: Object,
     required: true,
   },
 });
+
+defineEmits(["click"]);
 
 const formatDate = (date) => {
   if (!date) return "Pas de date";
@@ -43,6 +52,13 @@ const formatDate = (date) => {
   padding: 16px;
   margin-bottom: 16px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.task-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 .task-header {
@@ -50,6 +66,12 @@ const formatDate = (date) => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 12px;
+}
+
+.task-title-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .task-title {
@@ -76,6 +98,28 @@ const formatDate = (date) => {
 
 .task-status.terminé {
   background-color: #10ac84;
+  color: white;
+}
+
+.task-priority {
+  font-size: 0.8rem;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 500;
+}
+
+.task-priority.haute {
+  background-color: #ff4757;
+  color: white;
+}
+
+.task-priority.moyenne {
+  background-color: #ffa502;
+  color: white;
+}
+
+.task-priority.basse {
+  background-color: #7bed9f;
   color: white;
 }
 
