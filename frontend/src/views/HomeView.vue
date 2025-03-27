@@ -95,7 +95,7 @@
       :show="showModal"
       :taskId="selectedTaskId"
       @close="closeModal"
-      @taskDeleted="onTaskDeleted" />
+      @taskUpdated="onTaskUpdated" />
 
     <!-- Modal de création -->
     <CreateTaskModal
@@ -207,6 +207,13 @@ const resetFilters = () => {
     sortBy: "",
   };
   applyFilters();
+};
+
+const onTaskUpdated = (updatedTask) => {
+  const index = tasks.value.findIndex((t) => t._id === updatedTask._id);
+  if (index !== -1) {
+    tasks.value[index] = updatedTask;
+  }
 };
 
 // Charger les tâches au montage du composant

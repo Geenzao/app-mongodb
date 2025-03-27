@@ -254,7 +254,7 @@ const props = defineProps({
   taskId: String,
 });
 
-const emit = defineEmits(["close", "taskDeleted"]);
+const emit = defineEmits(["close", "taskDeleted", "taskUpdated"]);
 
 const task = ref({});
 const loading = ref(false);
@@ -415,8 +415,6 @@ const updateTask = async () => {
       dateEcheance: task.value.dateEcheance,
     };
 
-    console.log("Données formatées :", taskToUpdate);
-
     const response = await fetch(
       `http://localhost:3000/api/tasks/${props.taskId}`,
       {
@@ -428,20 +426,21 @@ const updateTask = async () => {
       }
     );
 
-    console.log("Réponse du serveur :", response);
-
     if (!response.ok) {
       const errorData = await response.json();
-      console.error("Erreur détaillée :", errorData);
       throw new Error(
         errorData.message || "Erreur lors de la mise à jour de la tâche"
       );
     }
 
+    // Rafraîchir les données locales
     await fetchTaskDetails();
+
+    // Émettre un événement pour informer le parent de la modification
+    emit("taskUpdated", task.value);
+
     closeEditModal();
   } catch (err) {
-    console.error("Erreur complète :", err);
     error.value = err.message;
   }
 };
