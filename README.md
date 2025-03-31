@@ -27,3 +27,13 @@ Puis lancer la commande ```npm install```
 Pour lancer l'API, il suffit d'aller dans le dossier backend comme vu précédement ```cd .\backend``` puis de lancer la commande ```npm start```
 
 Puis si vous souhaitez allez sur l'interface web, il suffit de faire pareil : ```cd .\frontend``` puis  ```npm start```
+
+# Fonctionnement de l'API
+
+Tout d'abord, si vous souhaitez utiliser l'API sans interface web, il faudra que que vous ayez un lanceur de requetes comme postman.
+Voici les différentes requètes possible : 
+Pour récuperer toutes les taches :
+```
+GET http://localhost:3000/api/tasks
+```
+
