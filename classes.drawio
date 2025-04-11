@@ -1,0 +1,35 @@
+<mxfile>
+    <diagram id="class-diagram" name="Diagramme de Classes">
+        <mxGraphModel>
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                
+                <!-- Classe Task -->
+                <mxCell id="2" value="Task&#10;--&#10;- _id: String&#10;- titre: String&#10;- description: String&#10;- statut: String&#10;- priorite: String&#10;- categorie: String&#10;- dateCreation: Date&#10;- dateEcheance: Date" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=200;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;" vertex="1" parent="1">
+                    <mxGeometry x="320" y="40" width="200" height="200" as="geometry"/>
+                </mxCell>
+
+                <!-- Composant HomeView -->
+                <mxCell id="3" value="HomeView&#10;--&#10;- tasks: Task[]&#10;- loading: boolean&#10;- error: string&#10;- filters: Object&#10;--&#10;+ fetchTasks()&#10;+ applyFilters()&#10;+ resetFilters()&#10;+ openModal()&#10;+ closeModal()" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=200;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;" vertex="1" parent="1">
+                    <mxGeometry x="40" y="40" width="200" height="200" as="geometry"/>
+                </mxCell>
+
+                <!-- Composant TaskCard -->
+                <mxCell id="4" value="TaskCard&#10;--&#10;- task: Task&#10;--&#10;+ emit('click')" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=120;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;" vertex="1" parent="1">
+                    <mxGeometry x="600" y="40" width="160" height="120" as="geometry"/>
+                </mxCell>
+
+                <!-- Relations -->
+                <mxCell id="5" value="1" style="endArrow=open;html=1;endSize=12;startArrow=diamondThin;startSize=14;startFill=0;edgeStyle=orthogonalEdgeStyle;align=left;verticalAlign=bottom;" edge="1" parent="1" source="3" target="2">
+                    <mxGeometry x="-1" y="3" relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="6" value="0..*" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="5">
+                    <mxGeometry x="0.9" y="1" relative="1" as="geometry">
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

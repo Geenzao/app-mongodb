@@ -1,0 +1,20 @@
+<mxfile>
+    <diagram id="object-diagram" name="Diagramme d'Objets">
+        <mxGraphModel>
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                
+                <!-- Objet Task -->
+                <mxCell id="2" value="tache1: Task&#10;--&#10;_id: &quot;123&quot;&#10;titre: &quot;Exemple de tâche&quot;&#10;statut: &quot;en cours&quot;&#10;priorite: &quot;haute&quot;&#10;categorie: &quot;travail&quot;&#10;dateCreation: &quot;2024-01-20&quot;" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=160;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;" vertex="1" parent="1">
+                    <mxGeometry x="320" y="40" width="200" height="160" as="geometry"/>
+                </mxCell>
+
+                <!-- Instance de HomeView -->
+                <mxCell id="3" value="homeView: HomeView&#10;--&#10;tasks: [tache1, tache2]&#10;loading: false&#10;error: null&#10;filters: {statut: '', priorite: ''}" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=140;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;" vertex="1" parent="1">
+                    <mxGeometry x="40" y="40" width="200" height="140" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>
