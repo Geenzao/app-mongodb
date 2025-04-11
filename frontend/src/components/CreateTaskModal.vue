@@ -101,7 +101,9 @@
 
 <script setup>
 import { ref } from "vue";
+import { useToast } from "vue-toastification";
 
+const toast = useToast();
 const props = defineProps({
   show: Boolean,
 });
@@ -188,11 +190,12 @@ const createTask = async () => {
       );
     }
 
+    toast.success("Tâche créée avec succès !");
     emit("taskCreated", responseData);
     closeModal();
   } catch (error) {
     console.error("Détails de l'erreur:", error);
-    alert(error.message);
+    toast.error(error.message);
   }
 };
 </script>

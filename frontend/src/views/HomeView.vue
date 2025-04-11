@@ -95,6 +95,7 @@
       :show="showModal"
       :taskId="selectedTaskId"
       @close="closeModal"
+      @taskDeleted="onTaskDeleted"
       @taskUpdated="onTaskUpdated" />
 
     <!-- Modal de création -->
@@ -190,13 +191,19 @@ const closeCreateModal = () => {
 };
 
 const onTaskCreated = async (newTask) => {
-  await fetchTasks(); // Recharger toutes les tâches
+  tasks.value.unshift(newTask);
 };
 
-// Fonction pour gérer la suppression d'une tâche
-const onTaskDeleted = async () => {
-  await fetchTasks(); // Recharger la liste des tâches
+const onTaskDeleted = async (taskId) => {
+  tasks.value = tasks.value.filter((task) => task._id !== taskId);
   closeModal();
+};
+
+const onTaskUpdated = (updatedTask) => {
+  const index = tasks.value.findIndex((task) => task._id === updatedTask._id);
+  if (index !== -1) {
+    tasks.value[index] = updatedTask;
+  }
 };
 
 const resetFilters = () => {
@@ -207,13 +214,6 @@ const resetFilters = () => {
     sortBy: "",
   };
   applyFilters();
-};
-
-const onTaskUpdated = (updatedTask) => {
-  const index = tasks.value.findIndex((t) => t._id === updatedTask._id);
-  if (index !== -1) {
-    tasks.value[index] = updatedTask;
-  }
 };
 
 // Charger les tâches au montage du composant

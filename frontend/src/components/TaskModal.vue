@@ -248,7 +248,9 @@
 
 <script setup>
 import { ref, watch } from "vue";
+import { useToast } from "vue-toastification";
 
+const toast = useToast();
 const props = defineProps({
   show: Boolean,
   taskId: String,
@@ -321,10 +323,12 @@ const confirmDelete = async () => {
         throw new Error("Erreur lors de la suppression de la tâche");
       }
 
-      emit("taskDeleted");
+      toast.success("Tâche supprimée avec succès !");
+      emit("taskDeleted", props.taskId);
       closeModal();
     } catch (err) {
       error.value = err.message;
+      toast.error("Erreur lors de la suppression : " + err.message);
     }
   }
 };
@@ -348,8 +352,12 @@ const addSubTask = async () => {
     if (!response.ok)
       throw new Error("Erreur lors de l'ajout de la sous-tâche");
 
-    // Rafraîchir les détails de la tâche
-    await fetchTaskDetails();
+    const newSubTask = await response.json();
+
+    task.value.sousTaches.push(newSubTask);
+
+    emit("taskUpdated", task.value);
+
     showAddSubTask.value = false;
     newSubTask.value.titre = "";
   } catch (err) {
@@ -381,16 +389,13 @@ const addComment = async () => {
 
     if (!response.ok) throw new Error("Erreur lors de l'ajout du commentaire");
 
-    await fetchTaskDetails();
+    const newComment = await response.json();
+
+    task.value.commentaires.push(newComment);
+
+    emit("taskUpdated", task.value);
+
     showAddComment.value = false;
-    newComment.value = {
-      auteur: {
-        nom: "",
-        prenom: "",
-        email: "",
-      },
-      contenu: "",
-    };
   } catch (err) {
     error.value = err.message;
   }
@@ -433,15 +438,17 @@ const updateTask = async () => {
       );
     }
 
-    // Rafraîchir les données locales
-    await fetchTaskDetails();
+    const updatedTaskData = await response.json();
 
-    // Émettre un événement pour informer le parent de la modification
-    emit("taskUpdated", task.value);
+    task.value = updatedTaskData;
 
+    emit("taskUpdated", updatedTaskData);
+
+    toast.success("Tâche mise à jour avec succès !");
     closeEditModal();
   } catch (err) {
     error.value = err.message;
+    toast.error("Erreur lors de la mise à jour : " + err.message);
   }
 };
 
